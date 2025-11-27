@@ -1,77 +1,71 @@
 pipeline {
     agent any
 
-    stages {
+    environment {
+        DOCKER_IMAGE = "mlops-app"
+        APP_PORT = "8000"
+    }
 
-        stage('Checkout') {
+    stages {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/A-B-USERS/chatgpt.git'
+                git url: 'https://github.com/A-B-USERS/chatgpt.git', branch: 'main'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '/usr/bin/pip3 install -r requirements.txt'
+                sh 'pip3 install --user -r requirements.txt'
             }
         }
 
         stage('Train Model') {
             steps {
-                sh '/usr/bin/python3 model/train.py'
+                sh 'python3 model/train.py'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t mlops-app .'
+                sh 'docker build -t $DOCKER_IMAGE .'
             }
         }
 
         stage('Run Container') {
             steps {
-                sh 'docker rm -f mlops-app || true'
-                sh 'docker run -d -p 8000:8000 --name mlops-app mlops-app'
+                script {
+                    // Stop and remove old container if exists
+                    def containerExists = sh(script: "docker ps -a --format '{{.Names}}' | grep -w $DOCKER_IMAGE || true", returnStdout: true).trim()
+                    if (containerExists) {
+                        sh "docker rm -f $DOCKER_IMAGE"
+                    }
+                    // Run new container
+                    sh "docker run -d -p $APP_PORT:8000 --name $DOCKER_IMAGE $DOCKER_IMAGE"
+                }
+            }
+        }
+
+        stage('Example Script Stage') {
+            steps {
+                script {
+                    def someList = ['fastapi', 'mlops', 'docker']
+                    if (someList.any { it == 'mlops' }) {
+                        echo "Found 'mlops' in the list"
+                    }
+                }
             }
         }
     }
-}
-pipeline {
-    agent any
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/A-B-USERS/chatgpt.git'
-            }
+    post {
+        always {
+            echo 'Pipeline finished!'
         }
-
-        stage('Install Dependencies') {
-            steps {
-                sh '/usr/bin/pip3 install -r requirements.txt'
-            }
+        success {
+            echo 'Everything succeeded!'
         }
-
-        stage('Train Model') {
-            steps {
-                sh '/usr/bin/python3 model/train.py'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t mlops-app .'
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                sh 'docker rm -f mlops-app || true'
-                sh 'docker run -d -p 8000:8000 --name mlops-app mlops-app'
-            }
+        failure {
+            echo 'Something failed, check logs.'
         }
     }
 }
-
