@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>House Price Prediction</title>
+</head>
+<body>
+    <h2>House Price Prediction</h2>
+    <form action="/predict_form" method="post">
+        <label>Area:</label><br>
+        <input type="number" name="area" required><br><br>
+        <label>Bedrooms:</label><br>
+        <input type="number" name="bedrooms" required><br><br>
+        <label>Age:</label><br>
+        <input type="number" name="age" required><br><br>
+        <input type="submit" value="Predict">
+    </form>
+
+    {% if prediction %}
+    <h3>Predicted Price: {{ prediction }}</h3>
+    {% endif %}
+</body>
+</html>
+
+
+
+
